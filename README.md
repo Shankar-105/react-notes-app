@@ -66,24 +66,6 @@ src/
 └── index.css              # Global styles with Tailwind
 ```
 
-## Usage
-
-1. **Create a Note**: Click the floating action button (FAB) at the bottom right
-2. **View a Note**: Click on any note card
-3. **Edit a Note**: Click the edit button when viewing a note
-4. **Delete a Note**: Click the delete button when viewing a note
-5. **Search Notes**: Click the search icon in the header
-6. **View Info**: Click the info icon in the header
-
-## Design
-
-The UI is designed to match the Figma design with:
-- Dark background (#252525)
-- Colorful note cards
-- Rounded corners (30px for main container, 10px for cards)
-- Nunito font family
-- Smooth hover effects and transitions
-
 ## License
 
 This project is open source and available for use.
