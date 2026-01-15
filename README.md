@@ -1,46 +1,89 @@
-# Getting Started with Create React App
+# Notes App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A beautiful notes-taking web application built with React.js and Tailwind CSS, designed based on a Figma UI design.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- 📝 Create, edit, and delete notes
+- 🎨 Colorful note cards with different color themes
+- 🔍 Search functionality to find notes quickly
+- 💾 Local storage persistence
+- 📱 Responsive design matching the Figma design
+- ✨ Smooth animations and transitions
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **React** - UI library
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Local Storage** - Data persistence
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js (v14 or higher)
+- npm or yarn
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Clone the repository or navigate to the project directory
+2. Install dependencies:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Running the App
 
-### `npm run eject`
+Start the development server:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```bash
+npm start
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The app will open in your browser at `http://localhost:3000`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### Building for Production
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```bash
+npm run build
+```
 
-## Learn More
+## Project Structure
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```
+src/
+├── components/
+│   ├── HomeScreen.tsx      # Main screen with note list
+│   ├── Editor.tsx          # Note editor component
+│   ├── ViewNote.tsx       # Note view component
+│   ├── SearchScreen.tsx   # Search functionality
+│   ├── NoteCard.tsx       # Individual note card
+│   └── InfoModal.tsx      # Info/about modal
+├── types.ts               # TypeScript type definitions
+├── App.tsx                # Main app component
+└── index.css              # Global styles with Tailwind
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Usage
+
+1. **Create a Note**: Click the floating action button (FAB) at the bottom right
+2. **View a Note**: Click on any note card
+3. **Edit a Note**: Click the edit button when viewing a note
+4. **Delete a Note**: Click the delete button when viewing a note
+5. **Search Notes**: Click the search icon in the header
+6. **View Info**: Click the info icon in the header
+
+## Design
+
+The UI is designed to match the Figma design with:
+- Dark background (#252525)
+- Colorful note cards
+- Rounded corners (30px for main container, 10px for cards)
+- Nunito font family
+- Smooth hover effects and transitions
+
+## License
+
+This project is open source and available for use.
