@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Note, ViewMode } from './types';
 import HomeScreen from './components/HomeScreen';
 import Editor from './components/Editor';
 import ViewNote from './components/ViewNote';
 import SearchScreen from './components/SearchScreen';
 import InfoModal from './components/InfoModal';
+import Login from './components/Login';
+import { useAuth } from './context/AuthContext';
+import { signOut } from './lib/auth';
+import { getNotes, addNote, updateNote, deleteNote } from './lib/notes';
 
 const NOTE_COLORS = [
   '#FF9E9E',
@@ -16,94 +20,43 @@ const NOTE_COLORS = [
 ];
 
 function App() {
+  const { user, loading: authLoading } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [currentView, setCurrentView] = useState<ViewMode>('home');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
 
-  // Load notes from localStorage on mount
-  useEffect(() => {
-    const savedNotes = localStorage.getItem('notes');
-    if (savedNotes) {
+  const fetchNotes = useCallback(async () => {
+    if (user) {
+      setDataLoading(true);
       try {
-        const parsed = JSON.parse(savedNotes);
-        setNotes(
-          parsed.map((note: any) => ({
-            ...note,
-            createdAt: new Date(note.createdAt),
-            updatedAt: new Date(note.updatedAt),
-          }))
-        );
+        const fetchedNotes = await getNotes(user.uid);
+        setNotes(fetchedNotes.map(n => ({
+          ...n,
+          id: n.id!,
+          createdAt: n.createdAt?.toDate() || new Date(),
+          updatedAt: n.updatedAt?.toDate() || new Date(),
+        })));
       } catch (error) {
-        console.error('Error loading notes:', error);
+        console.error('Error fetching notes:', error);
+      } finally {
+        setDataLoading(false);
       }
-    } else {
-      // Initialize with sample notes
-      const sampleNotes: Note[] = [
-        {
-          id: '1',
-          title: 'Book Review : The Design of Everyday Things by Don Norman',
-          content: '',
-          color: '#FF9E9E',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          title: 'Animes produced by Ufotable',
-          content: '',
-          color: '#91F48F',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          title: 'Mangas planned to read',
-          content: '',
-          color: '#FFF599',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '4',
-          title: 'Awesome tweets collection',
-          content: '',
-          color: '#9EFFFF',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '5',
-          title: 'List of free & open source apps',
-          content: '',
-          color: '#B69CFF',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '6',
-          title: 'UI concepts worth exsisting',
-          content: '',
-          color: '#FD99FF',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-      setNotes(sampleNotes);
-      localStorage.setItem('notes', JSON.stringify(sampleNotes));
     }
-  }, []);
+  }, [user]);
 
-  // Save notes to localStorage whenever notes change
   useEffect(() => {
-    if (notes.length > 0) {
-      localStorage.setItem('notes', JSON.stringify(notes));
+    if (user) {
+      fetchNotes();
+    } else {
+      setNotes([]);
     }
-  }, [notes]);
+  }, [user, fetchNotes]);
 
   const handleAddNote = () => {
     const newNote: Note = {
-      id: Date.now().toString(),
+      id: '', // Will be set by Firestore
       title: '',
       content: '',
       color: NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)],
@@ -119,31 +72,33 @@ function App() {
     setCurrentView('view');
   };
 
-  const handleSaveNote = (title: string, content: string) => {
-    if (selectedNote) {
-      const updatedNote: Note = {
-        ...selectedNote,
-        title: title || 'Untitled',
-        content,
-        updatedAt: new Date(),
-      };
-
-      if (notes.find((n) => n.id === selectedNote.id)) {
-        // Update existing note
-        setNotes(notes.map((n) => (n.id === selectedNote.id ? updatedNote : n)));
-      } else {
-        // Add new note
-        setNotes([...notes, updatedNote]);
+  const handleSaveNote = async (title: string, content: string) => {
+    if (user && selectedNote) {
+      try {
+        if (selectedNote.id) {
+          // Update existing note
+          await updateNote(selectedNote.id, { title, content });
+        } else {
+          // Add new note
+          await addNote(user.uid, title || 'Untitled', content, selectedNote.color);
+        }
+        await fetchNotes();
+        handleBack();
+      } catch (error) {
+        console.error('Error saving note:', error);
       }
-      setSelectedNote(updatedNote);
     }
   };
 
-  const handleDeleteNote = () => {
-    if (selectedNote) {
-      setNotes(notes.filter((n) => n.id !== selectedNote.id));
-      setSelectedNote(null);
-      setCurrentView('home');
+  const handleDeleteNote = async () => {
+    if (selectedNote?.id) {
+      try {
+        await deleteNote(selectedNote.id);
+        await fetchNotes();
+        handleBack();
+      } catch (error) {
+        console.error('Error deleting note:', error);
+      }
     }
   };
 
@@ -166,6 +121,26 @@ function App() {
     setShowInfoModal(true);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-notes-bg flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
   return (
     <div className="App min-h-screen bg-notes-bg">
       {currentView === 'home' && (
@@ -175,6 +150,7 @@ function App() {
           onAddNote={handleAddNote}
           onSearchClick={handleSearchClick}
           onInfoClick={handleInfoClick}
+          onLogout={handleLogout}
         />
       )}
       {currentView === 'editor' && selectedNote && (
@@ -202,6 +178,11 @@ function App() {
       )}
       {showInfoModal && (
         <InfoModal onClose={() => setShowInfoModal(false)} />
+      )}
+      {dataLoading && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
       )}
     </div>
   );
