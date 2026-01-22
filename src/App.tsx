@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Note, ViewMode } from './types';
 import HomeScreen from './components/HomeScreen';
 import Editor from './components/Editor';
 import ViewNote from './components/ViewNote';
 import SearchScreen from './components/SearchScreen';
 import InfoModal from './components/InfoModal';
+import SettingsModal from './components/SettingsModal';
 import Login from './components/Login';
 import { useAuth } from './context/AuthContext';
 import { signOut } from './lib/auth';
-import { getNotes, addNote, updateNote, deleteNote } from './lib/notes';
+import { addNote, updateNote, deleteNote, subscribeToNotes } from './lib/notes';
+import type { FirestoreNote } from './lib/notes';
 
 const NOTE_COLORS = [
   '#FF9E9E',
@@ -25,34 +27,37 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewMode>('home');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
 
-  const fetchNotes = useCallback(async () => {
+  useEffect(() => {
+    let unsubscribe: () => void;
+
     if (user) {
       setDataLoading(true);
-      try {
-        const fetchedNotes = await getNotes(user.uid);
-        setNotes(fetchedNotes.map(n => ({
-          ...n,
-          id: n.id!,
-          createdAt: n.createdAt?.toDate() || new Date(),
-          updatedAt: n.updatedAt?.toDate() || new Date(),
-        })));
-      } catch (error) {
-        console.error('Error fetching notes:', error);
-      } finally {
-        setDataLoading(false);
-      }
-    }
-  }, [user]);
+      unsubscribe = subscribeToNotes(user.uid, (fetchedNotes: FirestoreNote[]) => {
+        const sortedNotes = fetchedNotes
+          .map(n => ({
+            ...n,
+            id: n.id!,
+            createdAt: n.createdAt?.toDate ? n.createdAt.toDate() : new Date(),
+            updatedAt: n.updatedAt?.toDate ? n.updatedAt.toDate() : new Date(),
+          }))
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  useEffect(() => {
-    if (user) {
-      fetchNotes();
+        setNotes(sortedNotes);
+        setDataLoading(false);
+      });
     } else {
       setNotes([]);
     }
-  }, [user, fetchNotes]);
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user]);
 
   const handleAddNote = () => {
     const newNote: Note = {
@@ -82,7 +87,6 @@ function App() {
           // Add new note
           await addNote(user.uid, title || 'Untitled', content, selectedNote.color);
         }
-        await fetchNotes();
         handleBack();
       } catch (error) {
         console.error('Error saving note:', error);
@@ -94,7 +98,6 @@ function App() {
     if (selectedNote?.id) {
       try {
         await deleteNote(selectedNote.id);
-        await fetchNotes();
         handleBack();
       } catch (error) {
         console.error('Error deleting note:', error);
@@ -119,6 +122,10 @@ function App() {
 
   const handleInfoClick = () => {
     setShowInfoModal(true);
+  };
+
+  const handleSettingsClick = () => {
+    setShowSettingsModal(true);
   };
 
   const handleLogout = async () => {
@@ -150,6 +157,7 @@ function App() {
           onAddNote={handleAddNote}
           onSearchClick={handleSearchClick}
           onInfoClick={handleInfoClick}
+          onSettingsClick={handleSettingsClick}
           onLogout={handleLogout}
         />
       )}
@@ -178,6 +186,9 @@ function App() {
       )}
       {showInfoModal && (
         <InfoModal onClose={() => setShowInfoModal(false)} />
+      )}
+      {showSettingsModal && (
+        <SettingsModal onClose={() => setShowSettingsModal(false)} />
       )}
       {dataLoading && (
         <div className="fixed top-4 right-4 z-50">

@@ -8,11 +8,13 @@ import {
     deleteDoc,
     doc,
     serverTimestamp,
-    orderBy
+    orderBy,
+    onSnapshot,
+    Unsubscribe
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-export interface Note {
+export interface FirestoreNote {
     id?: string;
     title: string;
     content: string;
@@ -23,6 +25,23 @@ export interface Note {
 }
 
 const NOTES_COLLECTION = "notes";
+
+export const subscribeToNotes = (userId: string, onUpdate: (notes: FirestoreNote[]) => void): Unsubscribe => {
+    const q = query(
+        collection(db, NOTES_COLLECTION),
+        where("userId", "==", userId)
+    );
+
+    return onSnapshot(q, (querySnapshot) => {
+        const notes = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as FirestoreNote[];
+        onUpdate(notes);
+    }, (error) => {
+        console.error("Error subscribing to notes: ", error);
+    });
+};
 
 export const addNote = async (userId: string, title: string, content: string, color: string) => {
     try {
@@ -45,21 +64,20 @@ export const getNotes = async (userId: string) => {
     try {
         const q = query(
             collection(db, NOTES_COLLECTION),
-            where("userId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("userId", "==", userId)
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-        })) as Note[];
+        })) as FirestoreNote[];
     } catch (error) {
         console.error("Error getting notes: ", error);
         throw error;
     }
 };
 
-export const updateNote = async (noteId: string, updates: Partial<Note>) => {
+export const updateNote = async (noteId: string, updates: Partial<FirestoreNote>) => {
     try {
         const noteRef = doc(db, NOTES_COLLECTION, noteId);
         await updateDoc(noteRef, {

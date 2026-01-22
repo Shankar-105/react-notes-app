@@ -1,6 +1,7 @@
 import React from 'react';
 import { Note } from '../types';
 import NoteCard from './NoteCard';
+import { Settings } from 'lucide-react';
 
 interface HomeScreenProps {
   notes: Note[];
@@ -8,6 +9,7 @@ interface HomeScreenProps {
   onAddNote: () => void;
   onSearchClick: () => void;
   onInfoClick: () => void;
+  onSettingsClick: () => void;
   onLogout: () => void;
 }
 
@@ -17,6 +19,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onAddNote,
   onSearchClick,
   onInfoClick,
+  onSettingsClick,
   onLogout,
 }) => {
   const headerContent = (
@@ -58,6 +61,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               fill="white"
             />
           </svg>
+        </button>
+        <button
+          onClick={onSettingsClick}
+          className="w-[50px] h-[50px] bg-notes-button rounded-notes-button flex items-center justify-center hover:opacity-80 transition-opacity"
+        >
+          <Settings className="text-white w-6 h-6" />
         </button>
         <button
           onClick={onLogout}
